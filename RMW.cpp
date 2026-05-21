@@ -303,6 +303,7 @@ bool Rmw::dispatch_buffered_write(size_t entry_index) {
             top->receiveFromCPU(0, merged_task);
         }
         enqueue_pending_write_resp(entry.first_trans->task, entry.first_trans->channel);
+        top->tasks_info[entry.first_trans->task].wr_finish = true;
 
         delete entry.first_trans;
         delete entry.second_trans;
@@ -402,7 +403,8 @@ void Rmw::enqueue_pending_write_resp(uint64_t external_task, unsigned upstream_c
 void Rmw::pump_pending_write_resps() {
     while (!pending_write_merge_resps.empty()) {
         const PendingWriteResp &resp = pending_write_merge_resps.front();
-        if (!cmd_response(resp.external_task, 0, resp.upstream_channel)) {
+        // if (!cmd_response(resp.external_task, 0, resp.upstream_channel)) {
+        if (!((*(top->parentMemorySystem)->WriteResp)(resp.upstream_channel,resp.external_task,0,0,0))) {
             return;
         }
         pending_write_merge_resps.pop_front();
